@@ -6,15 +6,14 @@
     <title>Sistema de Fiscalización - IB2026</title>
     <style>
         :root {
-            /* Paleta de Colores VERDOSOS */
-            --primary: #196F3D;    /* Verde Institucional Fuerte */
-            --secondary: #2ECC71;  /* Verde Esmeralda */
-            --accent: #145A32;     /* Verde Bosque Oscuro */
-            --bg: #E8F5E9;         /* Fondo Verde Muy Claro */
+            --primary: #196F3D;    
+            --secondary: #2ECC71;  
+            --accent: #145A32;     
+            --bg: #E8F5E9;         
             --white: #ffffff;
             --text: #2c3e50;
-            --admin-badge: #D4AC0D; /* Dorado para Admin */
-            --user-badge: #27ae60;  /* Verde para Usuario */
+            --admin-badge: #D4AC0D; 
+            --user-badge: #27ae60;  
         }
 
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; }
@@ -62,19 +61,17 @@
         .role-admin { background-color: var(--admin-badge); }
         .role-user { background-color: var(--user-badge); }
 
-        /* Panel Admin */
         #adminPanel {
             display: none; background: #D5F5E3; border: 1px solid #A9DFBF;
             padding: 20px; margin-top: 20px; border-radius: 8px;
         }
         .panel-title { color: var(--accent); font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #A9DFBF; padding-bottom: 5px; }
 
-        /* Layout del Formulario Masivo */
         .form-massive { display: flex; gap: 20px; align-items: flex-start; }
         .form-col-text { flex: 2; }
         .form-col-actions { flex: 1; display: flex; flex-direction: column; gap: 10px; }
 
-        /* Tabla General */
+        /* TABLAS */
         .table-container { 
             margin-top: 30px; background: var(--white); padding: 20px; 
             border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; 
@@ -86,24 +83,59 @@
         td { padding: 12px; border-bottom: 1px solid #eee; }
         tr:hover { background-color: #EAFAF1; }
 
-        /* Tabla Estadísticas */
-        .stats-table th { background-color: var(--accent); }
-        .stats-table td { text-align: center; }
-        .stats-table td:first-child { text-align: left; font-weight: bold; }
-
-        /* Botones Acción */
         .btn-action { padding: 6px 12px; font-size: 11px; width: auto; margin: 0; }
         .btn-entregar { background-color: #E67E22; color: white; } 
         .btn-recibir { background-color: #8E44AD; color: white; } 
+        .btn-delete { background-color: #c0392b; color: white; border-radius: 50%; width: 30px; height: 30px; padding: 0; line-height: 30px; text-align: center; }
         
         .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .st-asignado { background-color: #E74C3C; } 
         .st-entregado { background-color: #F1C40F; } 
         .st-finalizado { background-color: var(--secondary); }
 
+        /* --- MODAL ESTADÍSTICAS --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: white; width: 600px; padding: 30px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .chart-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .tab-btn { background: #eee; color: #555; padding: 8px 16px; border-radius: 20px; font-size: 12px; width: auto; margin: 0; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        
+        /* Gráfico de Barras CSS Simple */
+        .chart-container { height: 300px; display: flex; align-items: flex-end; justify-content: space-around; padding-top: 20px; background: #fafafa; border: 1px solid #eee; border-radius: 4px; }
+        .bar-group { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .bar { width: 40px; background: var(--secondary); border-radius: 4px 4px 0 0; transition: height 0.5s; position: relative; }
+        .bar:hover { background: var(--primary); }
+        .bar-value { position: absolute; top: -20px; width: 100%; text-align: center; font-weight: bold; font-size: 12px; }
+        .bar-label { margin-top: 10px; font-size: 11px; text-align: center; color: #555; font-weight: bold; }
+        .no-data { width: 100%; text-align: center; color: #999; margin-top: 100px; }
+
     </style>
 </head>
 <body>
+
+    <div id="statsModal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; color:var(--primary);">📊 Productividad de Entrega</h2>
+                <button onclick="cerrarEstadisticas()" style="width:auto; background:none; color:#999; font-size:20px; margin:0;">✖</button>
+            </div>
+
+            <div class="chart-tabs">
+                <button class="tab-btn active" onclick="cambiarPeriodo('dia', this)">Hoy (Día)</button>
+                <button class="tab-btn" onclick="cambiarPeriodo('semana', this)">Esta Semana</button>
+                <button class="tab-btn" onclick="cambiarPeriodo('mes', this)">Este Mes</button>
+            </div>
+
+            <div id="graficoArea" class="chart-container">
+                </div>
+            <p style="text-align:center; font-size:12px; color:#777; margin-top:15px;">Muestra conteo de oficios con estatus "Entregado" o "Finalizado".</p>
+        </div>
+    </div>
 
     <div id="loginScreen" class="auth-container">
         <div class="auth-box">
@@ -154,12 +186,11 @@
         </header>
 
         <div id="adminPanel">
-            <div class="panel-title">🌿 ASIGNACIÓN MASIVA DE OFICIOS</div>
+            <div class="panel-title">🌿 ASIGNACIÓN MASIVA</div>
             <div class="form-massive">
                 <div class="form-col-text">
                     <label style="font-weight:bold; color:var(--accent);">Pegar lista de Oficios:</label>
-                    <textarea id="oficioInput" rows="4" placeholder="Ejemplo:&#10;OFI-001/2026&#10;OFI-002/2026&#10;OFI-003/2026&#10;(Puedes pegar desde Excel o separar por comas)"></textarea>
-                    <small style="color:#666;">* Cada línea cuenta como un registro nuevo.</small>
+                    <textarea id="oficioInput" rows="4" placeholder="Ej:&#10;OFI-001/2026&#10;OFI-002/2026"></textarea>
                 </div>
                 <div class="form-col-actions">
                     <label style="font-weight:bold; color:var(--accent);">Asignar a:</label>
@@ -180,6 +211,7 @@
                         <th>Estatus de Fechas</th>
                         <th>Acción</th>
                         <th>Estado</th>
+                        <th id="colDelete" style="display:none; text-align:center;">Eliminar</th>
                     </tr>
                 </thead>
                 <tbody id="documentTableBody"></tbody>
@@ -187,31 +219,33 @@
         </div>
 
         <div class="table-container" style="background-color: #F8F9F9; border-top: 3px solid var(--accent);">
-            <h3>📊 Resumen de Cargas de Trabajo</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>📊 Resumen de Cargas de Trabajo</h3>
+                <button onclick="abrirEstadisticas()" style="width:auto; margin:0; background:var(--primary);">📊 VER ESTADÍSTICAS</button>
+            </div>
+            
             <table class="stats-table">
                 <thead>
                     <tr>
                         <th>Usuario / Auditor</th>
-                        <th>🔴 Pendientes (Asignados)</th>
-                        <th>🟡 En Revisión (Entregados)</th>
-                        <th>🟢 Finalizados (Cerrados)</th>
-                        <th>Total Oficios</th>
+                        <th>🔴 Pendientes</th>
+                        <th>🟡 En Revisión</th>
+                        <th>🟢 Finalizados</th>
+                        <th>Total</th>
                     </tr>
                 </thead>
-                <tbody id="statsTableBody">
-                    </tbody>
+                <tbody id="statsTableBody"></tbody>
             </table>
         </div>
-
     </div>
 
 <script>
-    // --- BASE DE DATOS LOCAL ---
+    // --- BD LOCAL ---
     const DB_USERS = 'db_fiscal_green_users';
     const DB_DOCS = 'db_fiscal_green_docs';
     let currentUser = null;
 
-    // 1. INICIALIZACIÓN DE ADMINS
+    // 1. DATA INICIAL
     let users = JSON.parse(localStorage.getItem(DB_USERS)) || [];
     const adminsPredefinidos = [
         { name: "Administrador Jaguar", username: "Jaguar", password: "Verde2026", role: "admin" },
@@ -220,15 +254,13 @@
     ];
 
     adminsPredefinidos.forEach(admin => {
-        if (!users.find(u => u.username === admin.username)) {
-            users.push(admin);
-        }
+        if (!users.find(u => u.username === admin.username)) users.push(admin);
     });
     localStorage.setItem(DB_USERS, JSON.stringify(users)); 
 
     let docs = JSON.parse(localStorage.getItem(DB_DOCS)) || [];
 
-    // --- FUNCIONES DE ACCESO ---
+    // --- AUTH ---
     function toggleScreens(screen) {
         document.getElementById('loginScreen').style.display = screen === 'login' ? 'flex' : 'none';
         document.getElementById('registerScreen').style.display = screen === 'register' ? 'flex' : 'none';
@@ -241,13 +273,10 @@
         const pass = document.getElementById('regPass').value.trim();
 
         if (!name || !user || !pass) return alert("Complete todos los campos.");
-        if (users.find(u => u.username === user)) return alert("Error: El usuario ya existe.");
+        if (users.find(u => u.username === user)) return alert("Error: Usuario existente.");
 
-        // RESTRICCIÓN: MÁXIMO 3 USUARIOS CON EL MISMO NOMBRE
-        const personasConMismoNombre = users.filter(u => u.name.toLowerCase() === name.toLowerCase());
-        if (personasConMismoNombre.length >= 3) {
-            return alert("¡Alerta! Límite de 3 usuarios alcanzado para el nombre: " + name);
-        }
+        const countNames = users.filter(u => u.name.toLowerCase() === name.toLowerCase()).length;
+        if (countNames >= 3) return alert("Límite de 3 usuarios alcanzado para: " + name);
 
         users.push({ name, username: user, password: pass, role: 'user' });
         localStorage.setItem(DB_USERS, JSON.stringify(users));
@@ -275,7 +304,7 @@
         document.querySelectorAll('input').forEach(i => i.value = '');
     }
 
-    // --- LÓGICA DEL SISTEMA ---
+    // --- APP ---
     function initApp() {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
@@ -285,22 +314,26 @@
         badge.textContent = currentUser.role === 'admin' ? "ADMINISTRADOR" : "AUDITOR";
         badge.className = `user-badge ${currentUser.role === 'admin' ? 'role-admin' : 'role-user'}`;
 
-        if (currentUser.role === 'admin') {
-            document.getElementById('adminPanel').style.display = 'block';
-            cargarUsuariosSelect();
+        // Mostrar Panel Asignación (Admins)
+        document.getElementById('adminPanel').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        if (currentUser.role === 'admin') cargarUsuariosSelect();
+
+        // Mostrar Columna Eliminar (Solo Jaguar)
+        const colDelete = document.getElementById('colDelete');
+        if (currentUser.username === 'Jaguar') {
+            colDelete.style.display = 'table-cell';
         } else {
-            document.getElementById('adminPanel').style.display = 'none';
+            colDelete.style.display = 'none';
         }
 
         renderTable();
-        renderStats(); // Renderizar estadísticas al entrar
+        renderStatsTable();
     }
 
     function cargarUsuariosSelect() {
         const select = document.getElementById('userSelect');
         select.innerHTML = '<option value="">Seleccione Auditor...</option>';
-        const auditores = users.filter(u => u.role === 'user');
-        auditores.forEach(u => {
+        users.filter(u => u.role === 'user').forEach(u => {
             const opt = document.createElement('option');
             opt.value = u.username;
             opt.textContent = `${u.name} (${u.username})`;
@@ -308,43 +341,37 @@
         });
     }
 
-    // --- REGISTRO MASIVO ---
+    // --- LOGICA NEGOCIO ---
     function asignarOficiosMasivo() {
         const textoOficios = document.getElementById('oficioInput').value;
         const asignadoA = document.getElementById('userSelect').value;
 
-        if (!textoOficios.trim() || !asignadoA) return alert("Ingrese al menos un oficio y seleccione un usuario.");
+        if (!textoOficios.trim() || !asignadoA) return alert("Ingrese oficios y seleccione usuario.");
 
-        // Separar por saltos de línea (\n) o comas
         const listaOficios = textoOficios.split(/[\n,]+/).map(item => item.trim()).filter(item => item !== "");
-
-        if(listaOficios.length === 0) return alert("No se detectaron oficios validos.");
+        if(listaOficios.length === 0) return alert("Oficios no válidos.");
 
         let contador = 0;
         listaOficios.forEach(oficio => {
-            const nuevoDoc = {
-                id: Date.now() + Math.random(), // ID único
+            docs.push({
+                id: Date.now() + Math.random(),
                 oficio: oficio,
                 asignadoA: asignadoA, 
                 asignadoPor: currentUser.username, 
                 fechaAsignacion: new Date().toLocaleString(),
-                fechaEntrega: null,
-                fechaRecepcion: null,
-                estado: 'asignado' 
-            };
-            docs.push(nuevoDoc);
+                fechaEntrega: null, fechaRecepcion: null, estado: 'asignado' 
+            });
             contador++;
         });
 
         guardarYRenderizar();
-        document.getElementById('oficioInput').value = ''; // Limpiar campo
-        alert(`✅ Se registraron ${contador} oficios exitosamente para el usuario ${asignadoA}.`);
+        document.getElementById('oficioInput').value = ''; 
+        alert(`✅ ${contador} oficios asignados a ${asignadoA}.`);
     }
 
-    // --- ACCIONES INDIVIDUALES ---
     function registrarEntrega(id) {
         const doc = docs.find(d => d.id === id);
-        if (doc.asignadoA !== currentUser.username) return alert("No puedes entregar este oficio.");
+        if (doc.asignadoA !== currentUser.username) return alert("No es tu oficio.");
         doc.fechaEntrega = new Date().toLocaleString();
         doc.estado = 'entregado';
         guardarYRenderizar();
@@ -358,10 +385,20 @@
         guardarYRenderizar();
     }
 
+    // --- BORRADO (SOLO JAGUAR) ---
+    function eliminarRegistro(id) {
+        if(currentUser.username !== 'Jaguar') return alert("Solo Jaguar puede eliminar.");
+        
+        if(confirm("¿Estás seguro de ELIMINAR este registro permanentemente?")) {
+            docs = docs.filter(d => d.id !== id);
+            guardarYRenderizar();
+        }
+    }
+
     function guardarYRenderizar() {
         localStorage.setItem(DB_DOCS, JSON.stringify(docs));
         renderTable();
-        renderStats(); // Actualizar estadísticas tras cambios
+        renderStatsTable();
     }
 
     function renderTable() {
@@ -372,26 +409,31 @@
         lista.forEach(doc => {
             let accionBtn = '-';
             let estadoHTML = '';
+            let deleteCell = '';
 
+            // Definir botón de acción
             if (doc.estado === 'asignado') {
                 estadoHTML = '<span class="status-dot st-asignado"></span>Pendiente Entrega';
-                if (currentUser.username === doc.asignadoA) {
-                    accionBtn = `<button class="btn-action btn-entregar" onclick="registrarEntrega(${doc.id})">REGISTRAR ENTREGA</button>`;
-                } else {
-                    accionBtn = `<small style="color:#999">Esperando al auditor...</small>`;
-                }
+                accionBtn = currentUser.username === doc.asignadoA 
+                    ? `<button class="btn-action btn-entregar" onclick="registrarEntrega(${doc.id})">REGISTRAR ENTREGA</button>` 
+                    : `<small style="color:#999">Esperando...</small>`;
             } 
             else if (doc.estado === 'entregado') {
-                estadoHTML = '<span class="status-dot st-entregado"></span>Entregado (Por Validar)';
-                if (currentUser.role === 'admin') {
-                    accionBtn = `<button class="btn-action btn-recibir" onclick="registrarRecepcion(${doc.id})">VALIDAR RECEPCIÓN</button>`;
-                } else {
-                    accionBtn = `<small style="color:#E67E22">Esperando revisión Admin...</small>`;
-                }
+                estadoHTML = '<span class="status-dot st-entregado"></span>Entregado';
+                accionBtn = currentUser.role === 'admin' 
+                    ? `<button class="btn-action btn-recibir" onclick="registrarRecepcion(${doc.id})">VALIDAR</button>` 
+                    : `<small style="color:#E67E22">Revisión...</small>`;
             } 
             else {
-                estadoHTML = '<span class="status-dot st-finalizado"></span>Ciclo Cerrado';
-                accionBtn = '<strong style="color:var(--primary)">✔ Completado</strong>';
+                estadoHTML = '<span class="status-dot st-finalizado"></span>Cerrado';
+                accionBtn = '✔ Listo';
+            }
+
+            // Celda Eliminar (Solo Jaguar)
+            if (currentUser.username === 'Jaguar') {
+                deleteCell = `<td style="text-align:center;"><button class="btn-delete" onclick="eliminarRegistro(${doc.id})">🗑️</button></td>`;
+            } else {
+                deleteCell = `<td style="display:none;"></td>`;
             }
 
             const fila = `
@@ -399,54 +441,143 @@
                     <td><strong>${doc.oficio}</strong></td>
                     <td>${doc.asignadoA}</td>
                     <td><small>${doc.asignadoPor}</small></td>
-                    <td style="font-size:11px; line-height:1.4;">
+                    <td style="font-size:11px;">
                         <div>📅 Asig: ${doc.fechaAsignacion}</div>
                         <div style="color:#E67E22">${doc.fechaEntrega ? '📦 Entr: ' + doc.fechaEntrega : ''}</div>
-                        <div style="color:#8E44AD">${doc.fechaRecepcion ? '✅ Recp: ' + doc.fechaRecepcion : ''}</div>
                     </td>
                     <td>${accionBtn}</td>
                     <td>${estadoHTML}</td>
+                    ${deleteCell}
                 </tr>
             `;
             tbody.innerHTML += fila;
         });
     }
 
-    // --- NUEVA FUNCIÓN: RENDERIZAR ESTADÍSTICAS ---
-    function renderStats() {
+    function renderStatsTable() {
         const tbody = document.getElementById('statsTableBody');
         tbody.innerHTML = '';
-
-        // Filtrar solo usuarios normales
-        const auditores = users.filter(u => u.role === 'user');
-
-        auditores.forEach(user => {
-            // Contar documentos por estado para este usuario
+        users.filter(u => u.role === 'user').forEach(user => {
             const misDocs = docs.filter(d => d.asignadoA === user.username);
-            const pendientes = misDocs.filter(d => d.estado === 'asignado').length;
-            const entregados = misDocs.filter(d => d.estado === 'entregado').length;
-            const finalizados = misDocs.filter(d => d.estado === 'finalizado').length;
-            const total = misDocs.length;
-
-            if (total > 0) { // Solo mostrar si tiene actividad
-                const fila = `
-                    <tr>
-                        <td>${user.name} <br><small style="color:#777">(${user.username})</small></td>
-                        <td style="color:#E74C3C; font-weight:bold;">${pendientes}</td>
-                        <td style="color:#F1C40F; font-weight:bold;">${entregados}</td>
-                        <td style="color:var(--primary); font-weight:bold;">${finalizados}</td>
-                        <td><strong>${total}</strong></td>
-                    </tr>
-                `;
-                tbody.innerHTML += fila;
+            if (misDocs.length > 0) {
+                const pen = misDocs.filter(d => d.estado === 'asignado').length;
+                const rev = misDocs.filter(d => d.estado === 'entregado').length;
+                const fin = misDocs.filter(d => d.estado === 'finalizado').length;
+                tbody.innerHTML += `<tr><td>${user.name}</td><td style="color:#E74C3C;font-weight:bold">${pen}</td><td style="color:#F1C40F;font-weight:bold">${rev}</td><td style="color:var(--primary);font-weight:bold">${fin}</td><td><strong>${misDocs.length}</strong></td></tr>`;
             }
         });
-
-        if (tbody.innerHTML === '') {
-            tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; color:#999;">No hay actividad registrada aún.</td></tr>';
-        }
     }
-</script>
 
+    // --- LÓGICA GRÁFICO (MODAL) ---
+    function abrirEstadisticas() {
+        document.getElementById('statsModal').style.display = 'flex';
+        renderGrafico('dia'); // Por defecto carga HOY
+    }
+
+    function cerrarEstadisticas() {
+        document.getElementById('statsModal').style.display = 'none';
+    }
+
+    function cambiarPeriodo(periodo, btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderGrafico(periodo);
+    }
+
+    function renderGrafico(periodo) {
+        const container = document.getElementById('graficoArea');
+        container.innerHTML = '';
+
+        // 1. Obtener datos filtrados
+        const hoy = new Date();
+        const auditores = users.filter(u => u.role === 'user');
+        let maxVal = 0;
+
+        // Iterar usuarios para calcular altura barras
+        const datosGrafico = auditores.map(user => {
+            // Documentos entregados o finalizados por este usuario
+            const entregados = docs.filter(d => {
+                if (d.asignadoA !== user.username) return false;
+                if (!d.fechaEntrega) return false; // Solo cuentan los que tienen fecha entrega
+
+                // Parsear fecha entrega
+                // Formato local es D/M/YYYY, HH:MM:SS (aprox)
+                // Truco: Convertimos la fecha guardada en string a Objeto Date
+                // Nota: Date.parse funciona bien con el formato local en navegadores modernos,
+                // pero haremos una comparación simple.
+                
+                // Extraer componentes de la fecha string del doc
+                // Formato toLocaleString suele ser "D/M/AAAA, H:MM:SS" o similar
+                // Para simplificar comparaciones usaremos strings de fecha
+                
+                // Mejor estrategia: Crear objeto fecha a partir del string si es posible, 
+                // pero dado que el formato varia por PC, usaremos una lógica simple de strings para "hoy"
+                // y lógica de tiempo para semana/mes.
+                
+                // Hack para compatibilidad: Reconstruir fecha
+                // Como es localstorage en el mismo navegador, el formato es consistente.
+                
+                /* Intentamos convertir a objeto Date. Si falla, no cuenta */
+                /* En Chrome/Edge toLocaleString se puede re-parsear new Date(string) muchas veces */
+                /* Para robustez en este ejemplo, asumiremos que new Date(str) funciona */
+                
+                let fechaDoc = null;
+                // Intentar parsear manualmente DD/MM/YYYY si falla el directo
+                const partes = d.fechaEntrega.split(',')[0].split('/'); // "4/2/2026"
+                if(partes.length === 3) {
+                     // Asumiendo DD/MM/YYYY
+                     fechaDoc = new Date(partes[2], partes[1]-1, partes[0]);
+                } else {
+                     fechaDoc = new Date(d.fechaEntrega);
+                }
+
+                if (isNaN(fechaDoc.getTime())) return false; // Fecha invalida
+
+                // FILTROS
+                if (periodo === 'dia') {
+                    return fechaDoc.toDateString() === hoy.toDateString();
+                } 
+                else if (periodo === 'semana') {
+                    // Mismo año y misma semana
+                    const onejan = new Date(hoy.getFullYear(), 0, 1);
+                    const weekDoc = Math.ceil((((fechaDoc - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+                    const weekHoy = Math.ceil((((hoy - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+                    return (fechaDoc.getFullYear() === hoy.getFullYear()) && (weekDoc === weekHoy);
+                } 
+                else if (periodo === 'mes') {
+                    return (fechaDoc.getMonth() === hoy.getMonth()) && (fechaDoc.getFullYear() === hoy.getFullYear());
+                }
+                return false;
+            });
+
+            const cantidad = entregados.length;
+            if (cantidad > maxVal) maxVal = cantidad;
+
+            return { nombre: user.username, cantidad: cantidad };
+        });
+
+        // 2. Dibujar Barras
+        if (maxVal === 0) {
+            container.innerHTML = '<div class="no-data">No hay entregas registradas en este periodo.</div>';
+            return;
+        }
+
+        datosGrafico.forEach(dato => {
+            if (dato.cantidad > 0 || datosGrafico.length < 10) { // Mostrar aunque sea 0 si hay pocos usuarios
+                const porcentaje = (dato.cantidad / maxVal) * 80; // Max altura 80% del contenedor
+                const htmlBarra = `
+                    <div class="bar-group">
+                        <div class="bar" style="height: ${porcentaje}%;">
+                            <div class="bar-value">${dato.cantidad}</div>
+                        </div>
+                        <div class="bar-label">${dato.nombre}</div>
+                    </div>
+                `;
+                container.innerHTML += htmlBarra;
+            }
+        });
+    }
+
+</script>
 </body>
 </html>
