@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control de Fiscalización IB2026</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --admin-color: #c0392b; /* Rojo para cosas de admin */
+            --user-color: #27ae60;  /* Verde para usuarios */
+            --bg: #f4f6f7;
+            --white: #ffffff;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
+
+        /* --- PANTALLAS DE LOGIN / REGISTRO --- */
+        .auth-container {
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+            background: linear-gradient(135deg, var(--primary), #34495e);
+        }
+        .auth-box {
+            background: var(--white); padding: 40px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 350px; text-align: center;
+        }
+        .auth-box h2 { color: var(--primary); margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #7f8c8d; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; box-sizing: border-box; }
+        
+        button { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.3s; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: #1a252f; }
+        .btn-link { background: none; color: var(--primary); text-decoration: underline; margin-top: 15px; font-size: 12px; }
+
+        /* --- SISTEMA PRINCIPAL --- */
+        #app { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--white); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-bottom: 4px solid var(--primary);
+        }
+        .user-badge { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; }
+        .role-admin { background-color: var(--admin-color); }
+        .role-user { background-color: var(--user-color); }
+
+        /* Panel de Asignación (Solo Admin) */
+        #adminPanel {
+            display: none; background: #fff5f5; border: 1px solid #fadbd8;
+            padding: 20px; margin-top: 20px; border-radius: 8px;
+        }
+        .panel-title { color: var(--admin-color); font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #fadbd8; padding-bottom: 5px; }
+
+        .form-inline { display: flex; gap: 15px; align-items: flex-end; }
+        .form-inline .input-group { flex: 1; margin-bottom: 0; }
+        
+        /* Tabla */
+        .table-container { margin-top: 30px; background: var(--white); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: var(--primary); color: white; }
+        
+        /* Botones de acción en tabla */
+        .btn-action { padding: 5px 10px; font-size: 11px; width: auto; margin: 0; }
+        .btn-entregar { background-color: #e67e22; color: white; } /* Naranja */
+        .btn-recibir { background-color: #8e44ad; color: white; } /* Morado */
+        .btn-disabled { background-color: #ccc; cursor: not-allowed; }
+
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .st-asignado { background-color: #e74c3c; } /* Rojo */
+        .st-entregado { background-color: #f1c40f; } /* Amarillo */
+        .st-finalizado { background-color: #27ae60; } /* Verde */
+
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen" class="auth-container">
+        <div class="auth-box">
+            <h2>Acceso Fiscalización</h2>
+            <div class="input-group">
+                <label>Usuario (Máx 8 caracteres)</label>
+                <input type="text" id="loginUser" maxlength="8">
+            </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="loginPass">
+            </div>
+            <button class="btn-primary" onclick="login()">Iniciar Sesión</button>
+            <button class="btn-link" onclick="toggleScreens('register')">Crear cuenta nueva</button>
+        </div>
+    </div>
+
+    <div id="registerScreen" class="auth-container" style="display: none;">
+        <div class="auth-box">
+            <h2>Registro de Usuario</h2>
+            <div class="input-group">
+                <label>Nombre Completo</label>
+                <input type="text" id="regName">
+            </div>
+            <div class="input-group">
+                <label>Usuario (Máx 8 caracteres)</label>
+                <input type="text" id="regUser" maxlength="8" placeholder="Ej. juan123">
+                <small style="color: #999; font-size: 10px;">Para Admin usar formato: "Administrador IB2026..."</small>
+            </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="regPass">
+            </div>
+            <button class="btn-primary" onclick="register()">Registrarse</button>
+            <button class="btn-link" onclick="toggleScreens('login')">Volver al Login</button>
+        </div>
+    </div>
+
+    <div id="app">
+        <header>
+            <div>
+                <h2 style="margin:0; color:var(--primary);">Control de Documentos Fiscalizados</h2>
+                <div style="margin-top:5px;">
+                    Hola, <span id="displayUserName" style="font-weight:bold;"></span> 
+                    <span id="roleBadge" class="user-badge"></span>
+                </div>
+            </div>
+            <button onclick="logout()" style="width: auto; background: #e74c3c; color: white;">Cerrar Sesión</button>
+        </header>
+
+        <div id="adminPanel">
+            <div class="panel-title">👮 PANEL DE ASIGNACIÓN</div>
+            <div class="form-inline">
+                <div class="input-group">
+                    <label>Número de Oficio</label>
+                    <input type="text" id="oficioInput" placeholder="Ej. OFI-001/2026">
+                </div>
+                <div class="input-group">
+                    <label>Asignar a Usuario:</label>
+                    <select id="userSelect">
+                        </select>
+                </div>
+                <div class="input-group" style="flex: 0.5;">
+                    <button class="btn-primary" onclick="asignarOficio()">ASIGNAR</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3 style="margin-top:0; color:var(--primary);">Registro de Movimientos</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Oficio</th>
+                        <th>Asignado A</th>
+                        <th>Asignado Por</th>
+                        <th>Fechas (Asig / Entrega / Recep)</th>
+                        <th>Acción Requerida</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="documentTableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    // --- LÓGICA DE BASE DE DATOS LOCAL ---
+    const DB_USERS = 'db_fiscal_users';
+    const DB_DOCS = 'db_fiscal_docs';
+    let currentUser = null;
+
+    // Inicializar datos
+    let users = JSON.parse(localStorage.getItem(DB_USERS)) || [];
+    let docs = JSON.parse(localStorage.getItem(DB_DOCS)) || [];
+
+    // --- FUNCIONES DE AUTH ---
+    function toggleScreens(screen) {
+        document.getElementById('loginScreen').style.display = screen === 'login' ? 'flex' : 'none';
+        document.getElementById('registerScreen').style.display = screen === 'register' ? 'flex' : 'none';
+    }
+
+    function register() {
+        const name = document.getElementById('regName').value.trim();
+        const user = document.getElementById('regUser').value.trim();
+        const pass = document.getElementById('regPass').value.trim();
+
+        if (!name || !user || !pass) return alert("Todos los campos son obligatorios");
+        if (users.find(u => u.username === user)) return alert("El usuario ya existe");
+
+        // Determinar Rol basado en el nombre de usuario (Según instrucciones)
+        // Si el usuario contiene "Administrador IB2026", es Admin.
+        const isAdmin = user.includes("Administrador IB2026") || user.includes("ADMIN IB2026"); 
+        
+        users.push({ name, username: user, password: pass, role: isAdmin ? 'admin' : 'user' });
+        localStorage.setItem(DB_USERS, JSON.stringify(users));
+        
+        alert("Registro exitoso. Por favor inicie sesión.");
+        toggleScreens('login');
+    }
+
+    function login() {
+        const userIn = document.getElementById('loginUser').value.trim();
+        const passIn = document.getElementById('loginPass').value.trim();
+
+        const foundUser = users.find(u => u.username === userIn && u.password === passIn);
+
+        if (foundUser) {
+            currentUser = foundUser;
+            initApp();
+        } else {
+            alert("Credenciales incorrectas");
+        }
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('loginUser').value = '';
+        document.getElementById('loginPass').value = '';
+    }
+
+    // --- LÓGICA DEL SISTEMA ---
+    function initApp() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+
+        // Configurar Header
+        document.getElementById('displayUserName').textContent = currentUser.name;
+        const badge = document.getElementById('roleBadge');
+        badge.textContent = currentUser.role === 'admin' ? "ADMINISTRADOR" : "USUARIO";
+        badge.className = `user-badge ${currentUser.role === 'admin' ? 'role-admin' : 'role-user'}`;
+
+        // Configurar Panel de Admin
+        const adminPanel = document.getElementById('adminPanel');
+        if (currentUser.role === 'admin') {
+            adminPanel.style.display = 'block';
+            cargarUsuariosEnSelect();
+        } else {
+            adminPanel.style.display = 'none';
+        }
+
+        renderTable();
+    }
+
+    function cargarUsuariosEnSelect() {
+        const select = document.getElementById('userSelect');
+        select.innerHTML = '<option value="">Seleccione Usuario...</option>';
+        // Filtramos para mostrar solo usuarios normales (no admins) para asignarles trabajo
+        const usuariosNormales = users.filter(u => u.role === 'user');
+        usuariosNormales.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.username;
+            opt.textContent = `${u.name} (${u.username})`;
+            select.appendChild(opt);
+        });
+    }
+
+    // --- FASE 1: ASIGNACIÓN (Solo Admin) ---
+    function asignarOficio() {
+        const oficio = document.getElementById('oficioInput').value.trim();
+        const asignadoA = document.getElementById('userSelect').value;
+
+        if (!oficio || !asignadoA) return alert("Complete el Oficio y seleccione un Usuario");
+
+        const nuevoDoc = {
+            id: Date.now(),
+            oficio: oficio,
+            asignadoA: asignadoA, // Username del usuario
+            asignadoPor: currentUser.username, // Username del admin
+            fechaAsignacion: new Date().toLocaleString(),
+            fechaEntrega: null,
+            fechaRecepcion: null,
+            estado: 'asignado' // asignado, entregado, finalizado
+        };
+
+        docs.push(nuevoDoc);
+        saveDocs();
+        renderTable();
+        document.getElementById('oficioInput').value = '';
+    }
+
+    // --- FASE 2: REGISTRO DE ENTREGA (Solo Usuario Asignado) ---
+    function registrarEntrega(id) {
+        const docIndex = docs.findIndex(d => d.id === id);
+        if (docIndex === -1) return;
+
+        // Validacion extra
+        if (docs[docIndex].asignadoA !== currentUser.username) return alert("No puedes entregar un oficio que no es tuyo.");
+
+        docs[docIndex].fechaEntrega = new Date().toLocaleString();
+        docs[docIndex].estado = 'entregado';
+        saveDocs();
+        renderTable();
+    }
+
+    // --- FASE 3: RECEPCIÓN (Solo Admin) ---
+    function registrarRecepcion(id) {
+        if (currentUser.role !== 'admin') return alert("Solo administradores pueden recibir.");
+
+        const docIndex = docs.findIndex(d => d.id === id);
+        docs[docIndex].fechaRecepcion = new Date().toLocaleString();
+        docs[docIndex].estado = 'finalizado';
+        saveDocs();
+        renderTable();
+    }
+
+    function saveDocs() {
+        localStorage.setItem(DB_DOCS, JSON.stringify(docs));
+    }
+
+    // --- RENDERIZADO DE TABLA ---
+    function renderTable() {
+        const tbody = document.getElementById('documentTableBody');
+        tbody.innerHTML = '';
+
+        // Ordenar: Recientes primero
+        const docsOrdenados = docs.slice().reverse();
+
+        docsOrdenados.forEach(doc => {
+            let botonAccion = '-';
+            let estadoHtml = '';
+            let estiloFila = '';
+
+            // Definir Estado Visual
+            if (doc.estado === 'asignado') {
+                estadoHtml = '<span class="status-dot st-asignado"></span>En Proceso';
+                
+                // Lógica Botón ENTREGA
+                // Solo si soy el usuario asignado Y aún no se entrega
+                if (currentUser.username === doc.asignadoA) {
+                    botonAccion = `<button class="btn-action btn-entregar" onclick="registrarEntrega(${doc.id})">REGISTRO DE ENTREGA</button>`;
+                } else {
+                    botonAccion = `<span style="color:#999; font-size:11px;">Esperando entrega...</span>`;
+                }
+
+            } else if (doc.estado === 'entregado') {
+                estadoHtml = '<span class="status-dot st-entregado"></span>Entregado (Validar)';
+                
+                // Lógica Botón RECEPCIÓN
+                // Solo si soy Admin (idealmente el que asignó, pero cualquier admin sirve en la práctica)
+                if (currentUser.role === 'admin') {
+                    botonAccion = `<button class="btn-action btn-recibir" onclick="registrarRecepcion(${doc.id})">RECEPCIÓN</button>`;
+                } else {
+                    botonAccion = `<span style="color:#999; font-size:11px;">Pendiente de revisión Admin</span>`;
+                }
+
+            } else {
+                estadoHtml = '<span class="status-dot st-finalizado"></span>Finalizado';
+                botonAccion = '<span style="color:green; font-weight:bold;">✔ Completado</span>';
+            }
+
+            const fila = `
+                <tr>
+                    <td><strong>${doc.oficio}</strong></td>
+                    <td>${doc.asignadoA}</td>
+                    <td><small>${doc.asignadoPor}</small></td>
+                    <td style="font-size: 11px;">
+                        <div>Asig: ${doc.fechaAsignacion}</div>
+                        <div style="color: #e67e22">${doc.fechaEntrega ? 'Entr: ' + doc.fechaEntrega : ''}</div>
+                        <div style="color: #8e44ad">${doc.fechaRecepcion ? 'Recp: ' + doc.fechaRecepcion : ''}</div>
+                    </td>
+                    <td>${botonAccion}</td>
+                    <td>${estadoHtml}</td>
+                </tr>
+            `;
+            tbody.innerHTML += fila;
+        });
+    }
+</script>
+
+</body>
+</html>
