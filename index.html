@@ -112,3 +112,341 @@
                 <label>Usuario</label>
                 <input type="text" id="loginUser" placeholder="Ej. Jaguar">
             </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="loginPass" placeholder="•••••••">
+            </div>
+            <button class="btn-primary" onclick="login()">Iniciar Sesión</button>
+            <button class="btn-link" onclick="toggleScreens('register')">Crear cuenta de Auditor</button>
+        </div>
+    </div>
+
+    <div id="registerScreen" class="auth-container" style="display: none;">
+        <div class="auth-box">
+            <h2>Nuevo Auditor</h2>
+            <div class="input-group">
+                <label>Nombre Completo</label>
+                <input type="text" id="regName" placeholder="Nombre y Apellido">
+            </div>
+            <div class="input-group">
+                <label>Usuario (Máx 8 letras)</label>
+                <input type="text" id="regUser" maxlength="8" placeholder="Ej. juanp">
+            </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="regPass">
+            </div>
+            <button class="btn-primary" onclick="register()">Registrarse</button>
+            <button class="btn-link" onclick="toggleScreens('login')">Volver al Login</button>
+        </div>
+    </div>
+
+    <div id="app">
+        <header>
+            <div>
+                <h2 style="margin:0; color:var(--primary);">Control Documental 2026</h2>
+                <div style="margin-top:5px;">
+                    Bienvenido, <span id="displayUserName" style="font-weight:bold;"></span> 
+                    <span id="roleBadge" class="user-badge"></span>
+                </div>
+            </div>
+            <button onclick="logout()" style="width: auto; background: #C0392B; color: white;">Salir</button>
+        </header>
+
+        <div id="adminPanel">
+            <div class="panel-title">🌿 ASIGNACIÓN MASIVA DE OFICIOS</div>
+            <div class="form-massive">
+                <div class="form-col-text">
+                    <label style="font-weight:bold; color:var(--accent);">Pegar lista de Oficios:</label>
+                    <textarea id="oficioInput" rows="4" placeholder="Ejemplo:&#10;OFI-001/2026&#10;OFI-002/2026&#10;OFI-003/2026&#10;(Puedes pegar desde Excel o separar por comas)"></textarea>
+                    <small style="color:#666;">* Cada línea cuenta como un registro nuevo.</small>
+                </div>
+                <div class="form-col-actions">
+                    <label style="font-weight:bold; color:var(--accent);">Asignar a:</label>
+                    <select id="userSelect"></select>
+                    <button class="btn-primary" onclick="asignarOficiosMasivo()">ASIGNAR TODO</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3>Bitácora de Movimientos</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Oficio</th>
+                        <th>Auditor Asignado</th>
+                        <th>Asignado Por</th>
+                        <th>Estatus de Fechas</th>
+                        <th>Acción</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="documentTableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="table-container" style="background-color: #F8F9F9; border-top: 3px solid var(--accent);">
+            <h3>📊 Resumen de Cargas de Trabajo</h3>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Usuario / Auditor</th>
+                        <th>🔴 Pendientes (Asignados)</th>
+                        <th>🟡 En Revisión (Entregados)</th>
+                        <th>🟢 Finalizados (Cerrados)</th>
+                        <th>Total Oficios</th>
+                    </tr>
+                </thead>
+                <tbody id="statsTableBody">
+                    </tbody>
+            </table>
+        </div>
+
+    </div>
+
+<script>
+    // --- BASE DE DATOS LOCAL ---
+    const DB_USERS = 'db_fiscal_green_users';
+    const DB_DOCS = 'db_fiscal_green_docs';
+    let currentUser = null;
+
+    // 1. INICIALIZACIÓN DE ADMINS
+    let users = JSON.parse(localStorage.getItem(DB_USERS)) || [];
+    const adminsPredefinidos = [
+        { name: "Administrador Jaguar", username: "Jaguar", password: "Verde2026", role: "admin" },
+        { name: "Administrador Aguila", username: "Aguila", password: "Lima2026", role: "admin" },
+        { name: "Administrador Tigre",  username: "Tigre",  password: "Menta2026", role: "admin" }
+    ];
+
+    adminsPredefinidos.forEach(admin => {
+        if (!users.find(u => u.username === admin.username)) {
+            users.push(admin);
+        }
+    });
+    localStorage.setItem(DB_USERS, JSON.stringify(users)); 
+
+    let docs = JSON.parse(localStorage.getItem(DB_DOCS)) || [];
+
+    // --- FUNCIONES DE ACCESO ---
+    function toggleScreens(screen) {
+        document.getElementById('loginScreen').style.display = screen === 'login' ? 'flex' : 'none';
+        document.getElementById('registerScreen').style.display = screen === 'register' ? 'flex' : 'none';
+        document.querySelectorAll('input').forEach(i => i.value = '');
+    }
+
+    function register() {
+        const name = document.getElementById('regName').value.trim();
+        const user = document.getElementById('regUser').value.trim();
+        const pass = document.getElementById('regPass').value.trim();
+
+        if (!name || !user || !pass) return alert("Complete todos los campos.");
+        if (users.find(u => u.username === user)) return alert("Error: El usuario ya existe.");
+
+        // RESTRICCIÓN: MÁXIMO 3 USUARIOS CON EL MISMO NOMBRE
+        const personasConMismoNombre = users.filter(u => u.name.toLowerCase() === name.toLowerCase());
+        if (personasConMismoNombre.length >= 3) {
+            return alert("¡Alerta! Límite de 3 usuarios alcanzado para el nombre: " + name);
+        }
+
+        users.push({ name, username: user, password: pass, role: 'user' });
+        localStorage.setItem(DB_USERS, JSON.stringify(users));
+        alert("Registro exitoso.");
+        toggleScreens('login');
+    }
+
+    function login() {
+        const userIn = document.getElementById('loginUser').value.trim();
+        const passIn = document.getElementById('loginPass').value.trim();
+        const foundUser = users.find(u => u.username === userIn && u.password === passIn);
+
+        if (foundUser) {
+            currentUser = foundUser;
+            initApp();
+        } else {
+            alert("Credenciales incorrectas.");
+        }
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.querySelectorAll('input').forEach(i => i.value = '');
+    }
+
+    // --- LÓGICA DEL SISTEMA ---
+    function initApp() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+
+        document.getElementById('displayUserName').textContent = currentUser.name;
+        const badge = document.getElementById('roleBadge');
+        badge.textContent = currentUser.role === 'admin' ? "ADMINISTRADOR" : "AUDITOR";
+        badge.className = `user-badge ${currentUser.role === 'admin' ? 'role-admin' : 'role-user'}`;
+
+        if (currentUser.role === 'admin') {
+            document.getElementById('adminPanel').style.display = 'block';
+            cargarUsuariosSelect();
+        } else {
+            document.getElementById('adminPanel').style.display = 'none';
+        }
+
+        renderTable();
+        renderStats(); // Renderizar estadísticas al entrar
+    }
+
+    function cargarUsuariosSelect() {
+        const select = document.getElementById('userSelect');
+        select.innerHTML = '<option value="">Seleccione Auditor...</option>';
+        const auditores = users.filter(u => u.role === 'user');
+        auditores.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.username;
+            opt.textContent = `${u.name} (${u.username})`;
+            select.appendChild(opt);
+        });
+    }
+
+    // --- REGISTRO MASIVO ---
+    function asignarOficiosMasivo() {
+        const textoOficios = document.getElementById('oficioInput').value;
+        const asignadoA = document.getElementById('userSelect').value;
+
+        if (!textoOficios.trim() || !asignadoA) return alert("Ingrese al menos un oficio y seleccione un usuario.");
+
+        // Separar por saltos de línea (\n) o comas
+        const listaOficios = textoOficios.split(/[\n,]+/).map(item => item.trim()).filter(item => item !== "");
+
+        if(listaOficios.length === 0) return alert("No se detectaron oficios validos.");
+
+        let contador = 0;
+        listaOficios.forEach(oficio => {
+            const nuevoDoc = {
+                id: Date.now() + Math.random(), // ID único
+                oficio: oficio,
+                asignadoA: asignadoA, 
+                asignadoPor: currentUser.username, 
+                fechaAsignacion: new Date().toLocaleString(),
+                fechaEntrega: null,
+                fechaRecepcion: null,
+                estado: 'asignado' 
+            };
+            docs.push(nuevoDoc);
+            contador++;
+        });
+
+        guardarYRenderizar();
+        document.getElementById('oficioInput').value = ''; // Limpiar campo
+        alert(`✅ Se registraron ${contador} oficios exitosamente para el usuario ${asignadoA}.`);
+    }
+
+    // --- ACCIONES INDIVIDUALES ---
+    function registrarEntrega(id) {
+        const doc = docs.find(d => d.id === id);
+        if (doc.asignadoA !== currentUser.username) return alert("No puedes entregar este oficio.");
+        doc.fechaEntrega = new Date().toLocaleString();
+        doc.estado = 'entregado';
+        guardarYRenderizar();
+    }
+
+    function registrarRecepcion(id) {
+        if (currentUser.role !== 'admin') return alert("Acceso denegado.");
+        const doc = docs.find(d => d.id === id);
+        doc.fechaRecepcion = new Date().toLocaleString();
+        doc.estado = 'finalizado';
+        guardarYRenderizar();
+    }
+
+    function guardarYRenderizar() {
+        localStorage.setItem(DB_DOCS, JSON.stringify(docs));
+        renderTable();
+        renderStats(); // Actualizar estadísticas tras cambios
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('documentTableBody');
+        tbody.innerHTML = '';
+        const lista = docs.slice().reverse();
+
+        lista.forEach(doc => {
+            let accionBtn = '-';
+            let estadoHTML = '';
+
+            if (doc.estado === 'asignado') {
+                estadoHTML = '<span class="status-dot st-asignado"></span>Pendiente Entrega';
+                if (currentUser.username === doc.asignadoA) {
+                    accionBtn = `<button class="btn-action btn-entregar" onclick="registrarEntrega(${doc.id})">REGISTRAR ENTREGA</button>`;
+                } else {
+                    accionBtn = `<small style="color:#999">Esperando al auditor...</small>`;
+                }
+            } 
+            else if (doc.estado === 'entregado') {
+                estadoHTML = '<span class="status-dot st-entregado"></span>Entregado (Por Validar)';
+                if (currentUser.role === 'admin') {
+                    accionBtn = `<button class="btn-action btn-recibir" onclick="registrarRecepcion(${doc.id})">VALIDAR RECEPCIÓN</button>`;
+                } else {
+                    accionBtn = `<small style="color:#E67E22">Esperando revisión Admin...</small>`;
+                }
+            } 
+            else {
+                estadoHTML = '<span class="status-dot st-finalizado"></span>Ciclo Cerrado';
+                accionBtn = '<strong style="color:var(--primary)">✔ Completado</strong>';
+            }
+
+            const fila = `
+                <tr>
+                    <td><strong>${doc.oficio}</strong></td>
+                    <td>${doc.asignadoA}</td>
+                    <td><small>${doc.asignadoPor}</small></td>
+                    <td style="font-size:11px; line-height:1.4;">
+                        <div>📅 Asig: ${doc.fechaAsignacion}</div>
+                        <div style="color:#E67E22">${doc.fechaEntrega ? '📦 Entr: ' + doc.fechaEntrega : ''}</div>
+                        <div style="color:#8E44AD">${doc.fechaRecepcion ? '✅ Recp: ' + doc.fechaRecepcion : ''}</div>
+                    </td>
+                    <td>${accionBtn}</td>
+                    <td>${estadoHTML}</td>
+                </tr>
+            `;
+            tbody.innerHTML += fila;
+        });
+    }
+
+    // --- NUEVA FUNCIÓN: RENDERIZAR ESTADÍSTICAS ---
+    function renderStats() {
+        const tbody = document.getElementById('statsTableBody');
+        tbody.innerHTML = '';
+
+        // Filtrar solo usuarios normales
+        const auditores = users.filter(u => u.role === 'user');
+
+        auditores.forEach(user => {
+            // Contar documentos por estado para este usuario
+            const misDocs = docs.filter(d => d.asignadoA === user.username);
+            const pendientes = misDocs.filter(d => d.estado === 'asignado').length;
+            const entregados = misDocs.filter(d => d.estado === 'entregado').length;
+            const finalizados = misDocs.filter(d => d.estado === 'finalizado').length;
+            const total = misDocs.length;
+
+            if (total > 0) { // Solo mostrar si tiene actividad
+                const fila = `
+                    <tr>
+                        <td>${user.name} <br><small style="color:#777">(${user.username})</small></td>
+                        <td style="color:#E74C3C; font-weight:bold;">${pendientes}</td>
+                        <td style="color:#F1C40F; font-weight:bold;">${entregados}</td>
+                        <td style="color:var(--primary); font-weight:bold;">${finalizados}</td>
+                        <td><strong>${total}</strong></td>
+                    </tr>
+                `;
+                tbody.innerHTML += fila;
+            }
+        });
+
+        if (tbody.innerHTML === '') {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; color:#999;">No hay actividad registrada aún.</td></tr>';
+        }
+    }
+</script>
+
+</body>
+</html>
