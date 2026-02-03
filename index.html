@@ -14,7 +14,7 @@
             --white: #ffffff;
             --text: #2c3e50;
             --admin-badge: #D4AC0D; /* Dorado para Admin */
-            --user-badge: #27AE60;  /* Verde para Usuario */
+            --user-badge: #27ae60;  /* Verde para Usuario */
         }
 
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; }
@@ -34,11 +34,11 @@
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555; }
         
-        input, select { 
+        input, select, textarea { 
             width: 100%; padding: 10px; border: 1px solid #A9DFBF; 
-            border-radius: 4px; box-sizing: border-box; background-color: #FAFDFB;
+            border-radius: 4px; box-sizing: border-box; background-color: #FAFDFB; font-family: inherit;
         }
-        input:focus { border-color: var(--primary); outline: none; }
+        input:focus, textarea:focus { border-color: var(--primary); outline: none; }
         
         button { 
             width: 100%; padding: 10px; border: none; border-radius: 4px; 
@@ -69,17 +69,27 @@
         }
         .panel-title { color: var(--accent); font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #A9DFBF; padding-bottom: 5px; }
 
-        .form-inline { display: flex; gap: 15px; align-items: flex-end; }
+        /* Layout del Formulario Masivo */
+        .form-massive { display: flex; gap: 20px; align-items: flex-start; }
+        .form-col-text { flex: 2; }
+        .form-col-actions { flex: 1; display: flex; flex-direction: column; gap: 10px; }
 
-        /* Tabla */
+        /* Tabla General */
         .table-container { 
             margin-top: 30px; background: var(--white); padding: 20px; 
             border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; 
         }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        h3 { margin-top: 0; color: var(--primary); border-left: 5px solid var(--secondary); padding-left: 10px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 15px; }
         th { background-color: var(--primary); color: white; padding: 12px; text-align: left; }
         td { padding: 12px; border-bottom: 1px solid #eee; }
         tr:hover { background-color: #EAFAF1; }
+
+        /* Tabla Estadísticas */
+        .stats-table th { background-color: var(--accent); }
+        .stats-table td { text-align: center; }
+        .stats-table td:first-child { text-align: left; font-weight: bold; }
 
         /* Botones Acción */
         .btn-action { padding: 6px 12px; font-size: 11px; width: auto; margin: 0; }
@@ -102,303 +112,3 @@
                 <label>Usuario</label>
                 <input type="text" id="loginUser" placeholder="Ej. Jaguar">
             </div>
-            <div class="input-group">
-                <label>Contraseña</label>
-                <input type="password" id="loginPass" placeholder="•••••••">
-            </div>
-            <button class="btn-primary" onclick="login()">Iniciar Sesión</button>
-            <button class="btn-link" onclick="toggleScreens('register')">Crear cuenta de Auditor</button>
-        </div>
-    </div>
-
-    <div id="registerScreen" class="auth-container" style="display: none;">
-        <div class="auth-box">
-            <h2>Nuevo Auditor</h2>
-            <div class="input-group">
-                <label>Nombre Completo</label>
-                <input type="text" id="regName" placeholder="Nombre y Apellido">
-            </div>
-            <div class="input-group">
-                <label>Usuario (Máx 8 letras)</label>
-                <input type="text" id="regUser" maxlength="8" placeholder="Ej. juanp">
-            </div>
-            <div class="input-group">
-                <label>Contraseña</label>
-                <input type="password" id="regPass">
-            </div>
-            <button class="btn-primary" onclick="register()">Registrarse</button>
-            <button class="btn-link" onclick="toggleScreens('login')">Volver al Login</button>
-        </div>
-    </div>
-
-    <div id="app">
-        <header>
-            <div>
-                <h2 style="margin:0; color:var(--primary);">Control Documental 2026</h2>
-                <div style="margin-top:5px;">
-                    Bienvenido, <span id="displayUserName" style="font-weight:bold;"></span> 
-                    <span id="roleBadge" class="user-badge"></span>
-                </div>
-            </div>
-            <button onclick="logout()" style="width: auto; background: #C0392B; color: white;">Salir</button>
-        </header>
-
-        <div id="adminPanel">
-            <div class="panel-title">🌿 ASIGNACIÓN DE OFICIOS</div>
-            <div class="form-inline">
-                <div class="input-group" style="flex:1; margin-bottom:0;">
-                    <label>Número de Oficio</label>
-                    <input type="text" id="oficioInput" placeholder="Ej. OFI-001/2026">
-                </div>
-                <div class="input-group" style="flex:1; margin-bottom:0;">
-                    <label>Asignar a Auditor:</label>
-                    <select id="userSelect"></select>
-                </div>
-                <div class="input-group" style="flex:0.5; margin-bottom:0;">
-                    <button class="btn-primary" onclick="asignarOficio()">ASIGNAR</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="table-container">
-            <h3 style="margin-top:0; color:var(--primary);">Bitácora de Movimientos</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Oficio</th>
-                        <th>Auditor Asignado</th>
-                        <th>Asignado Por</th>
-                        <th>Estatus de Fechas</th>
-                        <th>Acción</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody id="documentTableBody"></tbody>
-            </table>
-        </div>
-    </div>
-
-<script>
-    // --- BASE DE DATOS LOCAL ---
-    const DB_USERS = 'db_fiscal_green_users';
-    const DB_DOCS = 'db_fiscal_green_docs';
-    let currentUser = null;
-
-    // 1. INICIALIZACIÓN DE ADMINS (Animales + Color2026)
-    let users = JSON.parse(localStorage.getItem(DB_USERS)) || [];
-    
-    // Lista de Admins requeridos
-    const adminsPredefinidos = [
-        { name: "Administrador Jaguar", username: "Jaguar", password: "Verde2026", role: "admin" },
-        { name: "Administrador Aguila", username: "Aguila", password: "Lima2026", role: "admin" },
-        { name: "Administrador Tigre",  username: "Tigre",  password: "Menta2026", role: "admin" }
-    ];
-
-    // Verificar e inyectar admins si no existen
-    adminsPredefinidos.forEach(admin => {
-        if (!users.find(u => u.username === admin.username)) {
-            users.push(admin);
-        }
-    });
-    localStorage.setItem(DB_USERS, JSON.stringify(users)); // Guardar cambios iniciales
-
-    let docs = JSON.parse(localStorage.getItem(DB_DOCS)) || [];
-
-    // --- FUNCIONES DE ACCESO ---
-    function toggleScreens(screen) {
-        document.getElementById('loginScreen').style.display = screen === 'login' ? 'flex' : 'none';
-        document.getElementById('registerScreen').style.display = screen === 'register' ? 'flex' : 'none';
-        
-        // Limpiar inputs
-        document.querySelectorAll('input').forEach(i => i.value = '');
-    }
-
-    function register() {
-        const name = document.getElementById('regName').value.trim();
-        const user = document.getElementById('regUser').value.trim();
-        const pass = document.getElementById('regPass').value.trim();
-
-        if (!name || !user || !pass) return alert("Complete todos los campos.");
-
-        // Validar Usuario único (Username)
-        if (users.find(u => u.username === user)) {
-            return alert("Error: El nombre de usuario ya está ocupado.");
-        }
-
-        // --- RESTRICCIÓN: MÁXIMO 3 USUARIOS CON EL MISMO NOMBRE COMPLETO ---
-        const personasConMismoNombre = users.filter(u => u.name.toLowerCase() === name.toLowerCase());
-        if (personasConMismoNombre.length >= 3) {
-            return alert("¡Alerta! Ya existen 3 usuarios registrados con el nombre '" + name + "'. No se permiten más registros.");
-        }
-
-        // Crear usuario (Rol siempre es user para registros nuevos)
-        users.push({ name, username: user, password: pass, role: 'user' });
-        localStorage.setItem(DB_USERS, JSON.stringify(users));
-        
-        alert("Registro exitoso. Bienvenido, " + name);
-        toggleScreens('login');
-    }
-
-    function login() {
-        const userIn = document.getElementById('loginUser').value.trim();
-        const passIn = document.getElementById('loginPass').value.trim();
-
-        const foundUser = users.find(u => u.username === userIn && u.password === passIn);
-
-        if (foundUser) {
-            currentUser = foundUser;
-            initApp();
-        } else {
-            alert("Credenciales incorrectas. Verifique usuario y contraseña.");
-        }
-    }
-
-    function logout() {
-        currentUser = null;
-        document.getElementById('app').style.display = 'none';
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.querySelectorAll('input').forEach(i => i.value = '');
-    }
-
-    // --- LÓGICA DEL SISTEMA ---
-    function initApp() {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-
-        // UI Header
-        document.getElementById('displayUserName').textContent = currentUser.name;
-        const badge = document.getElementById('roleBadge');
-        badge.textContent = currentUser.role === 'admin' ? "ADMINISTRADOR" : "AUDITOR";
-        badge.className = `user-badge ${currentUser.role === 'admin' ? 'role-admin' : 'role-user'}`;
-
-        // Panel Admin
-        if (currentUser.role === 'admin') {
-            document.getElementById('adminPanel').style.display = 'block';
-            cargarUsuariosSelect();
-        } else {
-            document.getElementById('adminPanel').style.display = 'none';
-        }
-
-        renderTable();
-    }
-
-    function cargarUsuariosSelect() {
-        const select = document.getElementById('userSelect');
-        select.innerHTML = '<option value="">Seleccione Auditor...</option>';
-        // Solo mostrar usuarios normales (no admins)
-        const auditores = users.filter(u => u.role === 'user');
-        auditores.forEach(u => {
-            const opt = document.createElement('option');
-            opt.value = u.username;
-            opt.textContent = `${u.name} (${u.username})`;
-            select.appendChild(opt);
-        });
-    }
-
-    // --- FLUJO DE TRABAJO ---
-    function asignarOficio() {
-        const oficio = document.getElementById('oficioInput').value.trim();
-        const asignadoA = document.getElementById('userSelect').value;
-
-        if (!oficio || !asignadoA) return alert("Faltan datos para asignar.");
-
-        const nuevoDoc = {
-            id: Date.now(),
-            oficio: oficio,
-            asignadoA: asignadoA, 
-            asignadoPor: currentUser.username, 
-            fechaAsignacion: new Date().toLocaleString(),
-            fechaEntrega: null,
-            fechaRecepcion: null,
-            estado: 'asignado' 
-        };
-
-        docs.push(nuevoDoc);
-        guardarYRenderizar();
-        document.getElementById('oficioInput').value = '';
-    }
-
-    function registrarEntrega(id) {
-        const doc = docs.find(d => d.id === id);
-        // Seguridad: Solo el dueño puede entregar
-        if (doc.asignadoA !== currentUser.username) return alert("No puedes entregar este oficio.");
-
-        doc.fechaEntrega = new Date().toLocaleString();
-        doc.estado = 'entregado';
-        guardarYRenderizar();
-    }
-
-    function registrarRecepcion(id) {
-        if (currentUser.role !== 'admin') return alert("Acceso denegado.");
-        
-        const doc = docs.find(d => d.id === id);
-        doc.fechaRecepcion = new Date().toLocaleString();
-        doc.estado = 'finalizado';
-        guardarYRenderizar();
-    }
-
-    function guardarYRenderizar() {
-        localStorage.setItem(DB_DOCS, JSON.stringify(docs));
-        renderTable();
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('documentTableBody');
-        tbody.innerHTML = '';
-        
-        // Mostrar más recientes primero
-        const lista = docs.slice().reverse();
-
-        lista.forEach(doc => {
-            let accionBtn = '-';
-            let estadoHTML = '';
-
-            // Estado 1: ASIGNADO
-            if (doc.estado === 'asignado') {
-                estadoHTML = '<span class="status-dot st-asignado"></span>Pendiente Entrega';
-                
-                // Botón solo visible para el AUDITOR dueño del oficio
-                if (currentUser.username === doc.asignadoA) {
-                    accionBtn = `<button class="btn-action btn-entregar" onclick="registrarEntrega(${doc.id})">REGISTRAR ENTREGA</button>`;
-                } else {
-                    accionBtn = `<small style="color:#999">Esperando al auditor...</small>`;
-                }
-            } 
-            // Estado 2: ENTREGADO
-            else if (doc.estado === 'entregado') {
-                estadoHTML = '<span class="status-dot st-entregado"></span>Entregado (Por Validar)';
-                
-                // Botón solo visible para CUALQUIER ADMIN
-                if (currentUser.role === 'admin') {
-                    accionBtn = `<button class="btn-action btn-recibir" onclick="registrarRecepcion(${doc.id})">VALIDAR RECEPCIÓN</button>`;
-                } else {
-                    accionBtn = `<small style="color:#E67E22">Esperando revisión Admin...</small>`;
-                }
-            } 
-            // Estado 3: FINALIZADO
-            else {
-                estadoHTML = '<span class="status-dot st-finalizado"></span>Ciclo Cerrado';
-                accionBtn = '<strong style="color:var(--primary)">✔ Completado</strong>';
-            }
-
-            const fila = `
-                <tr>
-                    <td><strong>${doc.oficio}</strong></td>
-                    <td>${doc.asignadoA}</td>
-                    <td><small>${doc.asignadoPor}</small></td>
-                    <td style="font-size:11px; line-height:1.4;">
-                        <div>📅 Asig: ${doc.fechaAsignacion}</div>
-                        <div style="color:#E67E22">${doc.fechaEntrega ? '📦 Entr: ' + doc.fechaEntrega : ''}</div>
-                        <div style="color:#8E44AD">${doc.fechaRecepcion ? '✅ Recp: ' + doc.fechaRecepcion : ''}</div>
-                    </td>
-                    <td>${accionBtn}</td>
-                    <td>${estadoHTML}</td>
-                </tr>
-            `;
-            tbody.innerHTML += fila;
-        });
-    }
-</script>
-
-</body>
-</html>
